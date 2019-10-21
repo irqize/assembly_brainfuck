@@ -217,6 +217,7 @@ main_loop:
         jne handle_close_bracket_nonzero
         handle_close_bracket_zero:
             #continue
+            popq %r15
             jmp continue
         handle_close_bracket_nonzero:
             #go back to matching [
