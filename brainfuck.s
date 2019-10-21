@@ -14,7 +14,7 @@
 .lcomm file_name_address, 8
 .lcomm file_buffer, 10240
 
-.lcomm cells, 30000
+.lcomm cells, 30001
 
 
 .data
@@ -62,7 +62,7 @@ zero_loop:
 
     incq %rsi
     incq (i)
-    cmpq $30000, (i)
+    cmpq $30001, (i)
     jl zero_loop
 
 
@@ -157,12 +157,16 @@ main_loop:
         cmpb $',', (%rsi)
         jne handle_open_bracket
 
-        movq $cells, %rsi
-        addq (pointer), %rsi
+        movq $input, %rsi
         movq $sys_read, %rax
         movq $1, %rdi
         movq $1, %rdx
         syscall
+
+        movq $cells, %rsi
+        addq (pointer), %rsi
+        movb (input), %al
+        movb %al, (%rsi)
 
         jmp continue
     handle_open_bracket:
@@ -180,6 +184,7 @@ main_loop:
             incq (i)
             movq (i), %rax
             movq $file_buffer, %rsi
+            addq %rax, %rsi
             #eof -> bad syntax
             cmpb $0, (%rsi)
             je syntax_errormsg
@@ -191,6 +196,7 @@ main_loop:
             #new ]
             handle_open_bracket_zero_loop_check_cb:
             cmpb $']', (%rsi)
+            jne handle_open_bracket_zero_loop_while
             decq %r9
             handle_open_bracket_zero_loop_while:
             cmpq $0, %r9
