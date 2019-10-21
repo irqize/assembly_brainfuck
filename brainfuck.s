@@ -12,7 +12,7 @@
 
 .lcomm file_descriptor, 1
 .lcomm file_name_address, 8
-.lcomm file_buffer, 10240
+.lcomm file_buffer, 102400
 
 .lcomm cells, 30001
 
@@ -46,7 +46,7 @@ main:
     movq	$sys_read, %rax # read file from file descriptor and save it to the memory
 	movq	(file_descriptor), %rdi
 	movq	$file_buffer, %rsi # file1_buffer is where we will store our file
-	movq	$10240, %rdx # we set max. file size to 10KB
+	movq	$102400, %rdx # we set max. file size to 100KB
 	syscall
 
 
