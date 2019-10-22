@@ -1,3 +1,4 @@
+#pkowalewski & gkulikovskis
 .text
     no_file_string: .asciz "No filename specified"
     syntax_error: .asciz "Brackets don't match"
@@ -56,120 +57,122 @@ main:
     ## END LOADING FILE
 
 
-movq $cells, %rsi
+movq $cells, %rsi #zero all cells (30000)
 zero_loop:
-    movb $0, (%rsi)
+    movb $0, (%rsi) #zero cell
 
-    incq %rsi
-    incq (i)
-    cmpq $30001, (i)
+    incq %rsi #pointer++
+    incq (i)  #i++
+    cmpq $30001, (i) #i <= 30000 => iterate the loop
     jl zero_loop
 
 
-    movq $0, (i)
-    call brainfuck
+    movq $0, (i) #reset loop iterator
+    call brainfuck #call bf subroutine
 
     
 
 end:
     movq %rbp, %rsp
-    popq %rbp
-	movq	$sys_exit, %rax # CALL SYSTEM EXIT
-	movq	$0, %rdi
+    popq %rbp #restore old stack frame
+	movq $sys_exit, %rax #sys_exit
+	movq $0, %rdi
     syscall
 
 
-no_file_errormsg:
+no_file_errormsg: #error shown where no file was specifed
     movq $0, %rax
     movq $no_file_string, %rsi
     movq $format_string_nl, %rdi
-    call printf
-    jmp end
+    call printf #print the msh
+    jmp end #end the programme
 
-syntax_errormsg:
+syntax_errormsg: #error shown when the brackets weren't symetric
     movq %rbp, %rsp
-    popq %rbp
+    popq %rbp #restore main's stack frame
     
     movq $0, %rax
     movq $syntax_error, %rsi
     movq $format_string_nl, %rdi
-    call printf
+    call printf #print the msg
 
-    ret
+    ret #return from bf subroutine
 
 
 brainfuck:
     pushq	%rbp      # CREATE NEW STACK FRAME
 	movq	%rsp, %rbp # CREATE NEW STACK FRAME
 
-    movq $0, (i)
-    movq $file_buffer, %rsi
+    movq $0, (i) #i shows on which character of the file we're working on atm
+    movq $file_buffer, %rsi 
 main_loop:
-    cmpb $0, (%rsi)
-    je _main_loop_end
+    cmpb $0, (%rsi) #if file ended => end the loop
+    je _main_loop_end 
 
 #Process single char
-    handle_greater:
+    handle_greater: # >
         cmpb $'>', (%rsi)
         jne handle_less
 
-        incq (pointer)
+        incq (pointer) #increase pointer
 
         jmp continue
-    handle_less:
+    handle_less: # <
         cmpb $'<', (%rsi)
         jne handle_plus
 
-        decq (pointer)
+        decq (pointer) #decrease pointer
 
         jmp continue
-    handle_plus:
+    handle_plus: # +
         cmpb $'+', (%rsi)
         jne handle_minus
 
-        movq $cells, %rsi
-        addq (pointer), %rsi
-        incq (%rsi)
+        movq $cells, %rsi 
+        addq (pointer), %rsi #address of the cell array + current character index
+        incq (%rsi) #add 1 to memory cell under current pointer
 
         jmp continue
-    handle_minus:
+    handle_minus: # -
         cmpb $'-', (%rsi)
         jne handle_dot
 
         movq $cells, %rsi
-        addq (pointer), %rsi
-        decq (%rsi)
+        addq (pointer), %rsi #address of the cell array + current character index
+        decq (%rsi) #substract 1 from memory cell under current pointer
 
         jmp continue
-    handle_dot:
+    handle_dot: # .
         cmpb $'.', (%rsi)
         jne handle_comma
 
+        #print character under current pointer
         movq $cells, %rsi
         addq (pointer), %rsi
         movq $sys_write, %rax
         movq $1, %rdi
-        movq $1, %rdx
+        movq $1, %rdx 
         syscall
 
         jmp continue
-    handle_comma:
+    handle_comma: # ,
         cmpb $',', (%rsi)
         jne handle_open_bracket
 
+        #read one character
         movq $input, %rsi
         movq $sys_read, %rax
         movq $1, %rdi
         movq $1, %rdx
         syscall
-
+        #put it under the pointer
         movq $cells, %rsi
         addq (pointer), %rsi
         movb (input), %al
         movb %al, (%rsi)
 
         jmp continue
-    handle_open_bracket:
+    handle_open_bracket: # [
         cmpb $'[', (%rsi)
         jne handle_close_bracket
 
@@ -199,7 +202,7 @@ main_loop:
             jne handle_open_bracket_zero_loop_while
             decq %r9
             handle_open_bracket_zero_loop_while:
-            cmpq $0, %r9
+            cmpq $0, %r9 #when numner of read [ and ] is equal, then we found the mathing one -> continue
             jne handle_open_bracket_zero_loop
             
             jmp continue
@@ -207,9 +210,9 @@ main_loop:
             #save [ pointer on stack, continue
             pushq (i)
             jmp continue
-    handle_close_bracket:
+    handle_close_bracket: # ]
         cmpb $']', (%rsi)
-        jne continue
+        jne continue #character is not implemented -> go to the next one
 
         movq $cells, %rsi
         addq (pointer), %rsi
@@ -217,11 +220,11 @@ main_loop:
         jne handle_close_bracket_nonzero
         handle_close_bracket_zero:
             #continue
-            popq %r15
+            popq %r15 #remove matching [ from the stack
             jmp continue
         handle_close_bracket_nonzero:
             #go back to matching [
-            popq (i)
+            popq (i) #go back to the matching [
             decq (i)
 
             jmp continue
